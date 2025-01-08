@@ -1,6 +1,7 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 const xml2js = require('xml2js');
+const fetch = require('node-fetch');
 
 const RSS_URL = 'https://www.minhngoc.net.vn/ket-qua-xo-so/dien-toan-vietlott.html';
 
@@ -24,13 +25,13 @@ const fetchRSSFeed = async (req, res) => {
       }
     });
 
-    console.log('Highest jackpot value:', highestJackpot);
+    // console.log('Highest jackpot value:', highestJackpot);
 
     // Format the number with commas and đ symbol
     const formattedJackpot = highestJackpot.toLocaleString('en-US') + 'đ';
 
     const jackpotDate = $('#DT6X45_NGAY_QUAY_THUONG').text().trim();
-    console.log('Jackpot date:', jackpotDate);
+    // console.log('Jackpot date:', jackpotDate);
 
     const rssFeed = {
       rss: {
@@ -130,8 +131,8 @@ const fetchLotteryResults = async (req, res) => {
       jackpotValue: jackpotValues[index]?.trim() || null,
     }));
 
-    console.log('Result number: ', resultNumbers);
-    console.log('Jackpot value: ', jackpotValues);
+    // console.log('Result number: ', resultNumbers);
+    // console.log('Jackpot value: ', jackpotValues);
 
     // Send structured data as the response
     res.json(lotteryData);
@@ -141,5 +142,48 @@ const fetchLotteryResults = async (req, res) => {
   }
 };
 
+const fetchNews = async () => {
+  try {
+    const url = 'https://vnexpress.net/tag/vietlott-780047'; 
+    const response = await axios.get(url); 
+    
+    // Make sure the response is correct
+    if (response.status === 200) {
+      const data = response.data;
+      const $ = cheerio.load(data); 
+      
+      const newsItems = [];
+      $('.item-news.item-news-common').each((index, element) => {
+        const titleElement = $(element).find('.title-news a');
+        const descriptionElement = $(element).find('.description a');
+        const imageElement = $(element).find('.thumb-art a img');
+        
+        const title = titleElement.attr('title') || titleElement.text();
+        const link = titleElement.attr('href');
+        const description = descriptionElement.text();
+        
+        let imageUrl = imageElement.data('src') || imageElement.attr('src');
+        
+        // If there's no 'src', check if 'data-src' exists and assign it to 'imageUrl'
+        if (!imageUrl && imageElement.data('src')) {
+          imageUrl = imageElement.data('src');
+        }
+        
+        if (title && link && description && imageUrl) { // Ensure all data is valid
+          newsItems.push({ title, link, description, imageUrl });
+        }
+      });
 
-module.exports = { fetchRSSFeed, fetchLotteryResults };
+      // Log fetched data to verify
+      console.log(newsItems);
+      return newsItems; // Return the news items
+    } else {
+      throw new Error(`Failed to fetch news. Status code: ${response.status}`);
+    }
+  } catch (error) {
+    console.error('Error fetching news:', error);
+    return []; // Return an empty array if error occurs
+  }
+};
+
+module.exports = { fetchRSSFeed, fetchLotteryResults, fetchNews };
