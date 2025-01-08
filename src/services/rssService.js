@@ -69,28 +69,29 @@ const fetchLotteryResults = async (req, res) => {
 
     const $ = cheerio.load(response.data);
 
-    // Fetch ticket turns and associated dates
-    let lotteryDetails = [];
-    $('td:contains("Kỳ vé")').each((index, element) => {
-      // Extract ticket turn and draw date
-      const ticketTurn = $(element).find('#DT6X45_KY_VE').text().trim().split('#')[1]; // Extract the number after '#'
-      const dateText = $(element).text().split('Ngày quay thưởng')[1]?.trim(); // Extract the date part
+    const lotteryDetails = [];
 
-      if (ticketTurn && dateText) {
-        lotteryDetails.push({
-          ticketTurn,
-          drawDate: dateText,
-        });
+    // Extract ticket turn and draw date, ensure uniqueness, and sort descending
+    $('td:contains("Kỳ vé")').each((index, element) => {
+      const ticketTurn = $(element).find('#DT6X45_KY_VE').text().trim().split('#')[1]; // Extract the number after '#'
+      const dateTextMatch = $(element).text().match(/Ngày quay thưởng\s*([\d/]+)/);
+      const drawDate = dateTextMatch ? dateTextMatch[1].trim() : null;
+
+      if (ticketTurn && drawDate) {
+        if (!lotteryDetails.some(detail => detail.ticketTurn === ticketTurn)) {
+          lotteryDetails.push({
+            ticketTurn,
+            drawDate,
+          });
+        }
       }
     });
 
-    // Sort ticket turns in descending order (latest first)
-    lotteryDetails = lotteryDetails
-      .sort((a, b) => b.ticketTurn.localeCompare(a.ticketTurn)) // Sort by ticket turn number (descending)
-      .slice(0, 5); // Take only the top 5 most recent tickets
+    // Sort the ticket turns in descending order
+    lotteryDetails.sort((a, b) => parseInt(b.ticketTurn) - parseInt(a.ticketTurn));
 
-    // Log the sorted results for debugging
-    console.log('Sorted Lottery Details (Ticket Turn & Date):', lotteryDetails);
+    // Retrieve only the 5 latest results
+    const latestLotteryDetails = lotteryDetails.slice(0, 5);
 
     // Fetch jackpot values
     const jackpotValues = $('#DT6X45_G_JACKPOT')
@@ -122,12 +123,15 @@ const fetchLotteryResults = async (req, res) => {
     const trimmedResultNumbers = resultNumbers.slice(0, 5);
 
     // Combine data into a structured array
-    const lotteryData = lotteryDetails.map((detail, index) => ({
+    const lotteryData = latestLotteryDetails.map((detail, index) => ({
       ticketTurn: detail.ticketTurn,
       drawDate: detail.drawDate,
       resultNumbers: trimmedResultNumbers[index] || [],
       jackpotValue: jackpotValues[index]?.trim() || null,
     }));
+
+    console.log('Result number: ', resultNumbers);
+    console.log('Jackpot value: ', jackpotValues);
 
     // Send structured data as the response
     res.json(lotteryData);
@@ -136,5 +140,6 @@ const fetchLotteryResults = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch lottery results' });
   }
 };
+
 
 module.exports = { fetchRSSFeed, fetchLotteryResults };
