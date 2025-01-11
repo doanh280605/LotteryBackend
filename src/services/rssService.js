@@ -3,7 +3,7 @@ const cheerio = require('cheerio');
 const xml2js = require('xml2js');
 const fetch = require('node-fetch');
 
-const RSS_URL = 'https://www.minhngoc.net.vn/ket-qua-xo-so/dien-toan-vietlott.html';
+const RSS_URL = 'https://www.minhngoc.net.vn/ket-qua-xo-so/dien-toan-vietlott/mega-6x45.html';
 
 const fetchRSSFeed = async (req, res) => {
   try {
@@ -142,6 +142,96 @@ const fetchLotteryResults = async (req, res) => {
   }
 };
 
+const fetchPowerResults = async (req, res) => {
+  try {
+    const response = await axios.get('https://www.minhngoc.net.vn/ket-qua-xo-so/dien-toan-vietlott/power-6x55.html', {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+      },
+    });
+
+    const $ = cheerio.load(response.data);
+
+    const lotteryDetails = [];
+
+    // Extract ticket turn and draw date, ensure uniqueness, and sort descending
+    $('td:contains("Kỳ vé")').each((index, element) => {
+      const ticketTurn = $(element).find('#DT6X45_KY_VE').text().trim().split('#')[1];
+      const dateTextMatch = $(element).text().match(/Ngày quay thưởng\s*([\d/]+)/);
+      const drawDate = dateTextMatch ? dateTextMatch[1].trim() : null;
+
+      if (ticketTurn && drawDate) {
+        if (!lotteryDetails.some(detail => detail.ticketTurn === ticketTurn)) {
+          lotteryDetails.push({
+            ticketTurn,
+            drawDate,
+          });
+        }
+      }
+    });
+
+    lotteryDetails.sort((a, b) => parseInt(b.ticketTurn) - parseInt(a.ticketTurn));
+    const latestLotteryDetails = lotteryDetails.slice(0, 5);
+
+    // Fetch Jackpot 1 and Jackpot 2 values
+    const jackpot1Values = $('#DT6X55_G_JACKPOT')
+      .text()
+      .trim()
+      .split('đ')
+      .filter(Boolean)
+      .map((value) => value + 'đ')
+      .slice(0, 5);
+
+    const jackpot2Values = $('#DT6X55_G_JACKPOT2')
+      .text()
+      .trim()
+      .split('đ')
+      .filter(Boolean)
+      .map((value) => value + 'đ')
+      .slice(0, 5);
+
+    const resultNumbers = [];
+    $('.result-number').each((index, element) => {
+      const numbers = [];
+      $(element)
+        .find('li:not(.number_special) div')
+        .each((i, numberElement) => {
+          const number = $(numberElement).text().trim();
+          if (number) {
+            numbers.push(number);
+          }
+        });
+
+      const specialNumber = $(element).find('.number_special div').text().trim();
+
+      if (numbers.length === 6 && specialNumber) {
+        resultNumbers.push({
+          regularNumbers: numbers,
+          specialNumber: specialNumber,
+        });
+      }
+    });
+
+    const trimmedResultNumbers = resultNumbers.slice(0, 5);
+
+    const lotteryData = latestLotteryDetails.map((detail, index) => ({
+      ticketTurn: detail.ticketTurn,
+      drawDate: detail.drawDate,
+      resultNumbers: trimmedResultNumbers[index]?.regularNumbers || [],
+      specialNumber: trimmedResultNumbers[index]?.specialNumber || null,
+      jackpot1Value: jackpot1Values[index]?.trim() || null,
+      jackpot2Value: jackpot2Values[index]?.trim() || null,
+    }));
+
+    res.json(lotteryData);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: 'Failed to fetch lottery results' });
+  }
+};
+
+
 const fetchNews = async () => {
   try {
     const url = 'https://vnexpress.net/tag/vietlott-780047'; 
@@ -173,9 +263,6 @@ const fetchNews = async () => {
           newsItems.push({ title, link, description, imageUrl });
         }
       });
-
-      // Log fetched data to verify
-      console.log(newsItems);
       return newsItems; // Return the news items
     } else {
       throw new Error(`Failed to fetch news. Status code: ${response.status}`);
@@ -186,4 +273,4 @@ const fetchNews = async () => {
   }
 };
 
-module.exports = { fetchRSSFeed, fetchLotteryResults, fetchNews };
+module.exports = { fetchRSSFeed, fetchLotteryResults, fetchNews, fetchPowerResults };
