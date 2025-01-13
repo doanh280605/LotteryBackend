@@ -3,6 +3,8 @@ const cheerio = require('cheerio');
 const xml2js = require('xml2js');
 const fetch = require('node-fetch');
 
+const Guess = require('../models/Guess')
+
 const RSS_URL = 'https://www.minhngoc.net.vn/ket-qua-xo-so/dien-toan-vietlott/mega-6x45.html';
 
 const fetchRSSFeed = async (req, res) => {
@@ -273,4 +275,24 @@ const fetchNews = async () => {
   }
 };
 
-module.exports = { fetchRSSFeed, fetchLotteryResults, fetchNews, fetchPowerResults };
+const saveGuess = async (req, res) => {
+  const {ticketType, numbers} = req.body;
+
+  if(!ticketType || !numbers || numbers.length === 0){
+    return res.status(400).json({message: 'Ticket type and at least 1 number are required'})
+  }
+
+  try {
+    const newGuess = await Guess.create({
+      ticketType, 
+      numbers,
+    });
+
+    res.status(201).json({message: 'Guess saved successfully'})
+  } catch (error) {
+    console.error('Error saving guess: ', error);
+    res.status(500).json({message: 'Error saving guess'})
+  }
+}
+
+module.exports = { fetchRSSFeed, fetchLotteryResults, fetchNews, fetchPowerResults, saveGuess };
