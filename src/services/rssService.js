@@ -318,41 +318,33 @@ const savePrediction = async (req, res) => {
   }
 };
 
-const getLatestPrediction = async (req, res) => {
-  const { currentTurn } = req.query;
-
-  if (!currentTurn) {
-      return res.status(400).json({ message: 'Current turn parameter is required' });
-  }
-
+const getPredictionHistory = async (req, res) => {
   try {
-      // Find the latest prediction for the current or future ticket turns
-      const latestPrediction = await Prediction.findOne({
-          where: {
-              ticketTurn: {
-                  [Op.gte]: currentTurn // Greater than or equal to current turn
-              }
-          },
+      // Find all predictions, ordered by ticketTurn descending
+      const predictions = await Prediction.findAll({
           order: [
-              ['ticketTurn', 'ASC'], // Get the nearest future turn first
-              ['id', 'DESC'] // For same turn, get the latest prediction
+              ['ticketTurn', 'DESC'],
+              ['id', 'DESC'] // For multiple predictions of the same turn, get the latest
           ]
       });
 
-      if (!latestPrediction) {
-          return res.status(404).json({ message: 'No predictions found for current or future turns' });
+      if (!predictions || predictions.length === 0) {
+          return res.status(404).json({ message: 'No predictions found' });
       }
 
-      res.status(200).json({
-          ticketTurn: latestPrediction.ticketTurn,
-          predictedNumbers: latestPrediction.predictedNumbers,
-          id: latestPrediction.id
-      });
+      res.status(200).json(predictions);
 
   } catch (error) {
-      console.error('Error fetching latest prediction: ', error);
-      res.status(500).json({ message: 'Error fetching latest prediction' });
+      console.error('Error fetching prediction history: ', error);
+      res.status(500).json({ message: 'Error fetching prediction history' });
   }
 };
-
-module.exports = { fetchRSSFeed, fetchLotteryResults, fetchNews, fetchPowerResults, saveGuess, savePrediction, getLatestPrediction };
+module.exports = { 
+  fetchRSSFeed, 
+  fetchLotteryResults, 
+  fetchNews, 
+  fetchPowerResults, 
+  saveGuess, 
+  savePrediction, 
+  getPredictionHistory 
+};
