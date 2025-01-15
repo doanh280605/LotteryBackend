@@ -2,8 +2,10 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const xml2js = require('xml2js');
 const fetch = require('node-fetch');
+const {Op} = require('sequelize')
 
 const Guess = require('../models/Guess')
+const Prediction = require('../models/Prediction')
 
 const RSS_URL = 'https://www.minhngoc.net.vn/ket-qua-xo-so/dien-toan-vietlott/mega-6x45.html';
 
@@ -295,4 +297,62 @@ const saveGuess = async (req, res) => {
   }
 }
 
-module.exports = { fetchRSSFeed, fetchLotteryResults, fetchNews, fetchPowerResults, saveGuess };
+const savePrediction = async (req, res) => {
+  const { ticketType, ticketTurn, predictedNumbers } = req.body;
+
+  if (!ticketType || !predictedNumbers || predictedNumbers.length === 0) {
+      return res.status(400).json({ message: 'Ticket type and at least 1 predicted number are required' });
+  }
+
+  try {
+      await Prediction.create({
+          ticketType,
+          ticketTurn,
+          predictedNumbers,
+      });
+
+      res.status(201).json({ message: 'Prediction saved successfully' });
+  } catch (error) {
+      console.error('Error saving prediction: ', error);
+      res.status(500).json({ message: 'Error saving prediction' });
+  }
+};
+
+const getLatestPrediction = async (req, res) => {
+  const { currentTurn } = req.query;
+
+  if (!currentTurn) {
+      return res.status(400).json({ message: 'Current turn parameter is required' });
+  }
+
+  try {
+      // Find the latest prediction for the current or future ticket turns
+      const latestPrediction = await Prediction.findOne({
+          where: {
+              ticketTurn: {
+                  [Op.gte]: currentTurn // Greater than or equal to current turn
+              }
+          },
+          order: [
+              ['ticketTurn', 'ASC'], // Get the nearest future turn first
+              ['id', 'DESC'] // For same turn, get the latest prediction
+          ]
+      });
+
+      if (!latestPrediction) {
+          return res.status(404).json({ message: 'No predictions found for current or future turns' });
+      }
+
+      res.status(200).json({
+          ticketTurn: latestPrediction.ticketTurn,
+          predictedNumbers: latestPrediction.predictedNumbers,
+          id: latestPrediction.id
+      });
+
+  } catch (error) {
+      console.error('Error fetching latest prediction: ', error);
+      res.status(500).json({ message: 'Error fetching latest prediction' });
+  }
+};
+
+module.exports = { fetchRSSFeed, fetchLotteryResults, fetchNews, fetchPowerResults, saveGuess, savePrediction, getLatestPrediction };
