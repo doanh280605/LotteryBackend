@@ -319,12 +319,19 @@ const savePrediction = async (req, res) => {
 };
 
 const getPredictionHistory = async (req, res) => {
+  const { ticketType } = req.query; 
+  console.log('Ticket type received:', ticketType);
+
   try {
-      // Find all predictions, ordered by ticketTurn descending
+      // If ticketType is provided, filter predictions by it, else fetch all predictions
+      const whereClause = ticketType ? { ticketType } : {};
+
+      // Fetch predictions from the database
       const predictions = await Prediction.findAll({
+          where: whereClause,
           order: [
               ['ticketTurn', 'DESC'],
-              ['id', 'DESC'] // For multiple predictions of the same turn, get the latest
+              ['id', 'DESC']  // For multiple predictions of the same turn, get the latest
           ]
       });
 
@@ -339,6 +346,7 @@ const getPredictionHistory = async (req, res) => {
       res.status(500).json({ message: 'Error fetching prediction history' });
   }
 };
+
 module.exports = { 
   fetchRSSFeed, 
   fetchLotteryResults, 
