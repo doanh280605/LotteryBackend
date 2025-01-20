@@ -299,39 +299,29 @@ const saveGuess = async (req, res) => {
 
 const getGuesses = async (req, res) => {
   const { ticketType, ticketTurn } = req.query;
-  console.log('Ticket type received:', ticketType);
-  console.log('Ticket turn received:', ticketTurn);
+    console.log('Ticket type received:', ticketType);  // Should log 'megaSmall'
+    console.log('Ticket turn received:', ticketTurn);  // Should log '01305'
 
-  try {
-      // Ensure ticketType is provided, otherwise return an error
-      if (!ticketType) {
-          return res.status(400).json({ message: 'ticketType is required' });
-      }
+    try {
+        // Fetch guesses from the database based on ticketType and ticketTurn
+        const guesses = await Guess.findAll({
+            where: {
+                ticketType: ticketType,
+                ticketTurn: ticketTurn
+            },
+            order: [['createdAt', 'DESC']],  // Sort guesses by creation date
+            limit: 1
+        });
 
-      // Build query conditions
-      const whereClause = { ticketType };
-      
-      if (ticketTurn) {
-          whereClause.ticketTurn = ticketTurn;
-      }
-
-      // Fetch guesses sorted by creation time
-      const guesses = await Guess.findAll({
-          where: whereClause,
-          order: [['createdAt', 'DESC']],  // Get the latest guess based on createdAt
-          limit: 1  // Limit to the latest guess
-      });
-
-      if (!guesses || guesses.length === 0) {
-          return res.status(404).json({ message: 'No guesses found' });
-      }
-
-      res.status(200).json(guesses);
-
-  } catch (error) {
-      console.error('Error fetching guesses:', error);
-      res.status(500).json({ message: 'Error fetching guesses' });
-  }
+        if (guesses.length > 0) {
+            return res.status(200).json(guesses);
+        } else {
+            return res.status(200).json([]);  // Return empty array if no guesses
+        }
+    } catch (error) {
+        console.error('Error fetching guesses:', error);
+        return res.status(500).json({ message: 'Error fetching guesses' });
+    }
 };
 
 const savePrediction = async (req, res) => {
