@@ -241,7 +241,6 @@ const fetchNews = async () => {
     const url = 'https://vnexpress.net/tag/vietlott-780047'; 
     const response = await axios.get(url); 
     
-    // Make sure the response is correct
     if (response.status === 200) {
       const data = response.data;
       const $ = cheerio.load(data); 
@@ -278,7 +277,7 @@ const fetchNews = async () => {
 };
 
 const saveGuess = async (req, res) => {
-  const {ticketType, numbers} = req.body;
+  const {ticketType, ticketTurn, numbers} = req.body;
 
   if(!ticketType || !numbers || numbers.length === 0){
     return res.status(400).json({message: 'Ticket type and at least 1 number are required'})
@@ -287,6 +286,7 @@ const saveGuess = async (req, res) => {
   try {
     const newGuess = await Guess.create({
       ticketType, 
+      ticketTurn,
       numbers,
     });
 
@@ -296,6 +296,43 @@ const saveGuess = async (req, res) => {
     res.status(500).json({message: 'Error saving guess'})
   }
 }
+
+const getGuesses = async (req, res) => {
+  const { ticketType, ticketTurn } = req.query;
+  console.log('Ticket type received:', ticketType);
+  console.log('Ticket turn received:', ticketTurn);
+
+  try {
+      // Ensure ticketType is provided, otherwise return an error
+      if (!ticketType) {
+          return res.status(400).json({ message: 'ticketType is required' });
+      }
+
+      // Build query conditions
+      const whereClause = { ticketType };
+      
+      if (ticketTurn) {
+          whereClause.ticketTurn = ticketTurn;
+      }
+
+      // Fetch guesses sorted by creation time
+      const guesses = await Guess.findAll({
+          where: whereClause,
+          order: [['createdAt', 'DESC']],  // Get the latest guess based on createdAt
+          limit: 1  // Limit to the latest guess
+      });
+
+      if (!guesses || guesses.length === 0) {
+          return res.status(404).json({ message: 'No guesses found' });
+      }
+
+      res.status(200).json(guesses);
+
+  } catch (error) {
+      console.error('Error fetching guesses:', error);
+      res.status(500).json({ message: 'Error fetching guesses' });
+  }
+};
 
 const savePrediction = async (req, res) => {
   const { ticketType, ticketTurn, predictedNumbers } = req.body;
@@ -354,5 +391,6 @@ module.exports = {
   fetchPowerResults, 
   saveGuess, 
   savePrediction, 
-  getPredictionHistory 
+  getPredictionHistory,
+  getGuesses
 };

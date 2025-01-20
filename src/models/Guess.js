@@ -12,6 +12,10 @@ const Guess = sequelize.define('Guess', {
         type: DataTypes.STRING,
         allowNull: false,
     },
+    ticketTurn: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
     numbers: {
         type: DataTypes.JSON,
         allowNull: false
