@@ -324,6 +324,31 @@ const getGuesses = async (req, res) => {
     }
 };
 
+const getAllGuessesByType = async (req, res) => {
+  const { ticketType } = req.query;
+  console.log('Ticket type received:', ticketType);  // Should log the ticket type provided
+
+  try {
+    // Fetch all guesses from the database based on ticketType
+    const guesses = await Guess.findAll({
+      where: {
+        ticketType: ticketType
+      },
+      order: [['createdAt', 'DESC']]  // Sort guesses by creation date
+    });
+
+    if (guesses.length > 0) {
+      return res.status(200).json(guesses);
+    } else {
+      return res.status(200).json([]);  // Return empty array if no guesses found
+    }
+  } catch (error) {
+    console.error('Error fetching all guesses by ticket type:', error);
+    return res.status(500).json({ message: 'Error fetching guesses' });
+  }
+};
+
+
 const savePrediction = async (req, res) => {
   const { ticketType, ticketTurn, predictedNumbers } = req.body;
 
@@ -382,5 +407,6 @@ module.exports = {
   saveGuess, 
   savePrediction, 
   getPredictionHistory,
-  getGuesses
+  getGuesses,
+  getAllGuessesByType
 };
