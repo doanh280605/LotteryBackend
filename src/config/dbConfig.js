@@ -1,11 +1,16 @@
+require('dotenv').config();
 const { Sequelize } = require('sequelize')
 
-const sequelize = new Sequelize('lottery', 'root', 'vietnam2005', {
-    host: 'localhost',
-    dialect: 'mysql',
-    port: 3306, 
-    logging: false,
-})
+const sequelize = new Sequelize(process.env.DATABASE_URL, {
+    dialect: "postgres",
+    dialectOptions: {
+        ssl: {
+            require: true, 
+            rejectUnauthorized: false,
+        },
+    },
+    logging: false
+});
 
 sequelize.authenticate()
     .then(() => console.log("Connect successfully"))

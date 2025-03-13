@@ -1,5 +1,6 @@
 const express = require('express');
-const { fetchRSSFeed, 
+const { createUser,
+        fetchRSSFeed, 
         fetchLotteryResults, 
         fetchNews, 
         fetchPowerResults, 
@@ -12,6 +13,7 @@ const { fetchRSSFeed,
 const router = express.Router();
 
 // GET /api/rss
+router.post('/createUser', createUser)
 router.get('/rss', fetchRSSFeed);
 router.get('/lottery-result', fetchLotteryResults);
 router.get('/power-result', fetchPowerResults);

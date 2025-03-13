@@ -4,8 +4,8 @@ const User = require('./User')
 
 const Guess = sequelize.define('Guess', {
     id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
         primaryKey: true,
     },
     ticketType: {
@@ -19,12 +19,17 @@ const Guess = sequelize.define('Guess', {
     numbers: {
         type: DataTypes.JSON,
         allowNull: false
+    },
+    userId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+            model: User,
+            key: 'id'
+        }
     }
 }, {
     timestamps: true,
 })
-
-User.hasMany(Guess, {foreignKey: 'userId'});
-Guess.belongsTo(User, {foreignKey: 'userId'});
 
 module.exports = Guess;

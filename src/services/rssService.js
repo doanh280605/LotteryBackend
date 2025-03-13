@@ -4,10 +4,35 @@ const xml2js = require('xml2js');
 const fetch = require('node-fetch');
 const {Op} = require('sequelize')
 
+const User = require('../models/User')
 const Guess = require('../models/Guess')
 const Prediction = require('../models/Prediction')
 
 const RSS_URL = 'https://www.minhngoc.net.vn/ket-qua-xo-so/dien-toan-vietlott/mega-6x45.html';
+
+const createUser = async (req, res) => {
+  try {
+    const { id } = req.body;
+    
+    if (!id) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+    
+    // Check if user already exists
+    const existingUser = await User.findByPk(id);
+    
+    if (existingUser) {
+      return res.status(200).json(existingUser);
+    }
+    
+    // Create new user
+    const newUser = await User.create({ id });
+    return res.status(201).json(newUser);
+  } catch (error) {
+    console.error('Error creating user:', error);
+    return res.status(500).json({ message: 'Failed to create user', error: error.message });
+  }
+};
 
 const fetchRSSFeed = async (req, res) => {
   try {
@@ -277,7 +302,7 @@ const fetchNews = async () => {
 };
 
 const saveGuess = async (req, res) => {
-  const {ticketType, ticketTurn, numbers} = req.body;
+  const {userId, ticketType, ticketTurn, numbers} = req.body;
 
   if(!ticketType || !numbers || numbers.length === 0){
     return res.status(400).json({message: 'Ticket type and at least 1 number are required'})
@@ -285,6 +310,7 @@ const saveGuess = async (req, res) => {
 
   try {
     const newGuess = await Guess.create({
+      userId,
       ticketType, 
       ticketTurn,
       numbers,
@@ -293,12 +319,13 @@ const saveGuess = async (req, res) => {
     res.status(201).json({message: 'Guess saved successfully'})
   } catch (error) {
     console.error('Error saving guess: ', error);
+    console.log(error)
     res.status(500).json({message: 'Error saving guess'})
   }
 }
 
 const getGuesses = async (req, res) => {
-  const { ticketType, ticketTurn } = req.query;
+  const { userId, ticketType, ticketTurn } = req.query;
     console.log('Ticket type received:', ticketType);  // Should log 'megaSmall'
     console.log('Ticket turn received:', ticketTurn);  // Should log '01305'
 
@@ -306,6 +333,7 @@ const getGuesses = async (req, res) => {
         // Fetch guesses from the database based on ticketType and ticketTurn
         const guesses = await Guess.findAll({
             where: {
+                userId,
                 ticketType: ticketType,
                 ticketTurn: ticketTurn
             },
@@ -320,6 +348,7 @@ const getGuesses = async (req, res) => {
         }
     } catch (error) {
         console.error('Error fetching guesses:', error);
+        console.log(error)
         return res.status(500).json({ message: 'Error fetching guesses' });
     }
 };
@@ -350,7 +379,7 @@ const getAllGuessesByType = async (req, res) => {
 
 
 const savePrediction = async (req, res) => {
-  const { ticketType, ticketTurn, predictedNumbers } = req.body;
+  const { userId, ticketType, ticketTurn, predictedNumbers } = req.body;
 
   if (!ticketType || !predictedNumbers || predictedNumbers.length === 0) {
       return res.status(400).json({ message: 'Ticket type and at least 1 predicted number are required' });
@@ -358,6 +387,7 @@ const savePrediction = async (req, res) => {
 
   try {
       await Prediction.create({
+          userId,
           ticketType,
           ticketTurn,
           predictedNumbers,
@@ -400,6 +430,7 @@ const getPredictionHistory = async (req, res) => {
 };
 
 module.exports = { 
+  createUser,
   fetchRSSFeed, 
   fetchLotteryResults, 
   fetchNews, 

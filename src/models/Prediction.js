@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/dbConfig');
+const User = require('./User')
 
 const Prediction = sequelize.define('Prediction', {
     id: {
@@ -18,6 +19,14 @@ const Prediction = sequelize.define('Prediction', {
     predictedNumbers: {
         type: DataTypes.JSON,
         allowNull: false,
+    },
+    userId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+            model: User,
+            key: 'id'
+        }
     }
 }, {
     timestamps: true,
