@@ -1,6 +1,6 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/dbConfig')
-const User = require('./User')
+import { DataTypes } from 'sequelize';
+import sequelize from '../config/dbConfig.js';
+import User from './User.js';
 
 const Guess = sequelize.define('Guess', {
     id: {
@@ -32,4 +32,4 @@ const Guess = sequelize.define('Guess', {
     timestamps: true,
 })
 
-module.exports = Guess;
+export default Guess;

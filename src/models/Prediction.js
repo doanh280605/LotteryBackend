@@ -1,6 +1,6 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/dbConfig');
-const User = require('./User')
+import { DataTypes } from 'sequelize';
+import sequelize from '../config/dbConfig.js';
+import User from './User.js';
 
 const Prediction = sequelize.define('Prediction', {
     id: {
@@ -32,4 +32,4 @@ const Prediction = sequelize.define('Prediction', {
     timestamps: true,
 });
 
-module.exports = Prediction;
+export default Prediction

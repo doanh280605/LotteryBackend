@@ -1,15 +1,16 @@
-const express = require('express');
-const { createUser,
-        fetchRSSFeed, 
-        fetchLotteryResults, 
-        fetchNews, 
-        fetchPowerResults, 
-        getGuesses, 
-        saveGuess, 
-        savePrediction, 
-        getPredictionHistory, 
-        getAllGuessesByType 
-    } = require('../services/rssService');
+import express from 'express';
+import {
+  createUser,
+  fetchRSSFeed,
+  fetchLotteryResults,
+  fetchNews,
+  fetchPowerResults,
+  getGuesses,
+  saveGuess,
+  savePrediction,
+  getPredictionHistory,
+  getAllGuessesByType
+} from '../services/rssService.js';
 const router = express.Router();
 
 // GET /api/rss
@@ -26,4 +27,5 @@ router.get('/vietlottnews', async (req, res) => {
     const news = await fetchNews();
     res.json(news);
 });
-module.exports = router;
+
+export default router;

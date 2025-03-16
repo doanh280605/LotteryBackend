@@ -1,7 +1,7 @@
-const express = require('express');
-const cors = require('cors');
-const rssRoutes = require('./routes/rssRoutes');
-const sequelize = require('./config/dbConfig');
+import express from 'express';
+import cors from 'cors';
+import rssRoutes from './routes/rssRoutes.js';
+import sequelize from './config/dbConfig.js';
 
 const app = express();
 
@@ -14,4 +14,4 @@ sequelize.sync({alter: true})
     .then(() => console.log("database synced"))
     .catch((err) => console.error('Synced error', err));
 
-module.exports = app;
+export default app;

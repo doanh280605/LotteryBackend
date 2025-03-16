@@ -1,16 +1,14 @@
-const axios = require('axios');
-const cheerio = require('cheerio');
-const xml2js = require('xml2js');
-const fetch = require('node-fetch');
-const {Op} = require('sequelize')
+import axios from 'axios';
+import * as cheerio from 'cheerio';
+import xml2js from 'xml2js';
 
-const User = require('../models/User')
-const Guess = require('../models/Guess')
-const Prediction = require('../models/Prediction')
+import User from '../models/User.js';
+import Guess from '../models/Guess.js';
+import Prediction from '../models/Prediction.js';
 
 const RSS_URL = 'https://www.minhngoc.net.vn/ket-qua-xo-so/dien-toan-vietlott/mega-6x45.html';
 
-const createUser = async (req, res) => {
+export const createUser = async (req, res) => {
   try {
     const { id } = req.body;
     
@@ -34,7 +32,7 @@ const createUser = async (req, res) => {
   }
 };
 
-const fetchRSSFeed = async (req, res) => {
+export const fetchRSSFeed = async (req, res) => {
   try {
     const response = await axios.get(RSS_URL, {
       headers: {
@@ -88,7 +86,7 @@ const fetchRSSFeed = async (req, res) => {
   }
 };
 
-const fetchLotteryResults = async (req, res) => {
+export const fetchLotteryResults = async (req, res) => {
   try {
     const response = await axios.get(RSS_URL, {
       headers: {
@@ -171,7 +169,7 @@ const fetchLotteryResults = async (req, res) => {
   }
 };
 
-const fetchPowerResults = async (req, res) => {
+export const fetchPowerResults = async (req, res) => {
   try {
     const response = await axios.get('https://www.minhngoc.net.vn/ket-qua-xo-so/dien-toan-vietlott/power-6x55.html', {
       headers: {
@@ -261,7 +259,7 @@ const fetchPowerResults = async (req, res) => {
 };
 
 
-const fetchNews = async () => {
+export const fetchNews = async () => {
   try {
     const url = 'https://vnexpress.net/tag/vietlott-780047'; 
     const response = await axios.get(url); 
@@ -301,7 +299,7 @@ const fetchNews = async () => {
   }
 };
 
-const saveGuess = async (req, res) => {
+export const saveGuess = async (req, res) => {
   const {userId, ticketType, ticketTurn, numbers} = req.body;
 
   if(!ticketType || !numbers || numbers.length === 0){
@@ -324,7 +322,7 @@ const saveGuess = async (req, res) => {
   }
 }
 
-const getGuesses = async (req, res) => {
+export const getGuesses = async (req, res) => {
   const { userId, ticketType, ticketTurn } = req.query;
     console.log('Ticket type received:', ticketType);  // Should log 'megaSmall'
     console.log('Ticket turn received:', ticketTurn);  // Should log '01305'
@@ -353,7 +351,7 @@ const getGuesses = async (req, res) => {
     }
 };
 
-const getAllGuessesByType = async (req, res) => {
+export const getAllGuessesByType = async (req, res) => {
   const { ticketType } = req.query;
   console.log('Ticket type received:', ticketType);  // Should log the ticket type provided
 
@@ -378,7 +376,7 @@ const getAllGuessesByType = async (req, res) => {
 };
 
 
-const savePrediction = async (req, res) => {
+export const savePrediction = async (req, res) => {
   const { userId, ticketType, ticketTurn, predictedNumbers } = req.body;
 
   if (!ticketType || !predictedNumbers || predictedNumbers.length === 0) {
@@ -400,7 +398,7 @@ const savePrediction = async (req, res) => {
   }
 };
 
-const getPredictionHistory = async (req, res) => {
+export const getPredictionHistory = async (req, res) => {
   const { ticketType } = req.query; 
   console.log('Ticket type received:', ticketType);
 
@@ -429,15 +427,3 @@ const getPredictionHistory = async (req, res) => {
   }
 };
 
-module.exports = { 
-  createUser,
-  fetchRSSFeed, 
-  fetchLotteryResults, 
-  fetchNews, 
-  fetchPowerResults, 
-  saveGuess, 
-  savePrediction, 
-  getPredictionHistory,
-  getGuesses,
-  getAllGuessesByType
-};
